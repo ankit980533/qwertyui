@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: xpensetrack
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/xpensetrack
+
+jwt:
+  secret: xpensetrack-secret-key-change-in-production-min-256-bits-long-key
+  expiration: 604800000  # 7 days
+
+server:
+  port: 8080

@@ -1,0 +1,49 @@
+# Backend (Java/Maven)
+backend/target/
+backend/*.iml
+
+# Android App
+app/.gradle/
+app/build/
+app/mobile/build/
+app/local.properties
+app/*.iml
+app/.idea/
+app/captures/
+
+# Gradle
+.gradle/
+**/build/
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Java
+*.class
+*.jar
+*.war
+*.log
+hs_err_pid*
+*.hprof
+
+# Kotlin
+*.kotlin_module
+
+# Android
+*.apk
+*.aab
+*.ap_
+*.dex
+local.properties
+
+# Secrets
+*.env
+*.secret

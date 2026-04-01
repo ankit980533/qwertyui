@@ -1,0 +1,5 @@
+package com.xpensetrack.model;
+
+public enum NotificationType {
+    BILL_REMINDER, OVERSPENDING, SETTLEMENT_REMINDER, SAVINGS_MILESTONE, DRAGON_UPDATE, PAYMENT_SUCCESS, GENERAL
+}
