@@ -20,6 +20,7 @@ public class UserProfileResponse {
     private double totalSaved;
     private double totalSpent;
     private int monthsActive;
+    private String activeLabel; // "X days" or "X months"
     private int friendCount;
     private String joinedMonth;
 }

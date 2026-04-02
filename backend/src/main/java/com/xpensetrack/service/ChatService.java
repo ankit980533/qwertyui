@@ -42,8 +42,10 @@ public class ChatService {
 
     private String generateReply(String userId, String message) {
         var user = userRepo.findById(userId).orElseThrow();
-        var now = LocalDate.now();
-        var expenses = expenseRepo.findByUserIdAndDateBetween(userId, now.withDayOfMonth(1), now);
+        var now = LocalDate.now(java.time.ZoneOffset.UTC);
+        var monthStart = now.withDayOfMonth(1).atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
+        var monthEnd = now.plusDays(1).atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
+        var expenses = expenseRepo.findByUserIdAndDateRange(userId, monthStart, monthEnd);
         double totalSpent = expenses.stream().mapToDouble(e -> e.getAmount()).sum();
         double remaining = user.getMonthlyBudget() - totalSpent;
         String msg = message.toLowerCase();

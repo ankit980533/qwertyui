@@ -32,4 +32,9 @@ public class PiggyBankController {
     public ResponseEntity<?> addSavings(@PathVariable String id, @RequestBody Map<String, Double> body) {
         return ResponseEntity.ok(piggyBankService.addSavings(AuthUtil.currentUserId(), id, body.get("amount")));
     }
+
+    @PostMapping("/{id}/complete")
+    public ResponseEntity<?> markComplete(@PathVariable String id) {
+        return ResponseEntity.ok(piggyBankService.markComplete(AuthUtil.currentUserId(), id));
+    }
 }

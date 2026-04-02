@@ -26,7 +26,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneral(Exception ex) {
+        ex.printStackTrace();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "INTERNAL_ERROR", "message", "Something went wrong"));
+                .body(Map.of("error", "INTERNAL_ERROR", "message", ex.getMessage() != null ? ex.getMessage() : "Something went wrong"));
     }
 }

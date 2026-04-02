@@ -39,12 +39,22 @@ interface FriendApi {
     suspend fun search(@Query("query") query: String): List<FriendItem>
     @GET("api/friends/requests")
     suspend fun getPendingRequests(): List<FriendRequestItem>
+    @GET("api/friends/requests/sent")
+    suspend fun getSentRequests(): List<FriendRequestItem>
     @POST("api/friends/request")
-    suspend fun sendRequest(@Body body: Map<String, String>): String
+    suspend fun sendRequest(@Body body: Map<String, String>): retrofit2.Response<Unit>
     @PUT("api/friends/requests/{id}")
-    suspend fun respond(@Path("id") id: String, @Query("accept") accept: Boolean): String
+    suspend fun respond(@Path("id") id: String, @Query("accept") accept: Boolean): retrofit2.Response<Unit>
+    @DELETE("api/friends/requests/{id}")
+    suspend fun revokeRequest(@Path("id") id: String): retrofit2.Response<Unit>
     @POST("api/friends/settle")
-    suspend fun settle(@Body body: Map<String, String>): String
+    suspend fun settle(@Body body: Map<String, String>): retrofit2.Response<Unit>
+    @POST("api/friends/groups")
+    suspend fun createGroup(@Body body: CreateGroupRequest): GroupItem
+    @GET("api/friends/groups")
+    suspend fun getGroups(): List<GroupItem>
+    @POST("api/friends/split")
+    suspend fun splitExpense(@Body body: SplitExpenseRequest): SplitExpenseItem
 }
 
 interface DragonApi {
@@ -64,9 +74,11 @@ interface PiggyBankApi {
     @GET("api/piggybank")
     suspend fun getOverview(): PiggyBankOverview
     @POST("api/piggybank")
-    suspend fun create(@Body body: Map<String, Any>): PiggyBankGoal
+    suspend fun create(@Body body: CreatePiggyBankRequest): PiggyBankGoal
     @POST("api/piggybank/{id}/save")
     suspend fun addSavings(@Path("id") id: String, @Body body: Map<String, Double>): PiggyBankGoal
+    @POST("api/piggybank/{id}/complete")
+    suspend fun markComplete(@Path("id") id: String): PiggyBankGoal
 }
 
 interface ChatApi {

@@ -32,6 +32,7 @@ public class JwtUtil {
             return Jwts.parser().verifyWith(key).build()
                     .parseSignedClaims(token).getPayload().getSubject();
         } catch (Exception e) {
+
             return null;
         }
     }

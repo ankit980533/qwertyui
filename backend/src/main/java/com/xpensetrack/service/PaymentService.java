@@ -14,6 +14,7 @@ import java.util.Map;
 public class PaymentService {
     private final PaymentRepository paymentRepo;
     private final UserRepository userRepo;
+    private final NotificationService notificationService;
 
     private static final Map<PaymentMethod, Double> CASHBACK_RATES = Map.of(
             PaymentMethod.UPI, 0.30, PaymentMethod.CREDIT_CARD, 0.05,
@@ -32,6 +33,14 @@ public class PaymentService {
         payment.setCashbackPercent(rate * 100);
         payment.setCashbackAmount(amount * rate);
         payment = paymentRepo.save(payment);
+
+        // Notify recipient
+        var fromUser = userRepo.findById(userId).orElse(null);
+        String fromName = fromUser != null ? fromUser.getFullName() : "Someone";
+        notificationService.send(toUserId, NotificationType.PAYMENT_SUCCESS, "Payment Successful",
+                "Transaction between you and " + fromName + " was successful.");
+        notificationService.send(userId, NotificationType.PAYMENT_SUCCESS, "Payment Successful",
+                "Transaction between you and " + toUser.getFullName() + " was successful.");
 
         return PaymentResponse.builder().id(payment.getId()).toUserName(toUser.getFullName())
                 .amount(amount).method(method).status("COMPLETED")

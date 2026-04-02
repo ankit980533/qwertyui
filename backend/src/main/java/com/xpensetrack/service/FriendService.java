@@ -15,6 +15,7 @@ public class FriendService {
     private final GroupRepository groupRepo;
     private final SplitExpenseRepository splitExpenseRepo;
     private final FriendRequestRepository friendRequestRepo;
+    private final NotificationService notificationService;
 
     public FriendsOverviewResponse getOverview(String userId) {
         Map<String, Double> balanceMap = new HashMap<>();
@@ -50,12 +51,19 @@ public class FriendService {
     }
 
     public String sendFriendRequest(String userId, String toUserId) {
+        if (userId.equals(toUserId))
+            throw new IllegalArgumentException("Cannot send friend request to yourself");
         if (friendRequestRepo.findByFromUserIdAndToUserId(userId, toUserId).isPresent())
             throw new IllegalArgumentException("Friend request already sent");
         var req = new FriendRequest();
         req.setFromUserId(userId);
         req.setToUserId(toUserId);
         friendRequestRepo.save(req);
+        // Notify the recipient
+        var sender = userRepo.findById(userId).orElse(null);
+        String senderName = sender != null ? sender.getFullName() : "Someone";
+        notificationService.send(toUserId, NotificationType.GENERAL, "Friend Request",
+                senderName + " sent you a friend request!");
         return "Friend request sent";
     }
 
@@ -71,18 +79,47 @@ public class FriendService {
             }).filter(Objects::nonNull).toList();
     }
 
+    // Sent (outgoing) requests
+    public List<FriendRequestResponse> getSentRequests(String userId) {
+        return friendRequestRepo.findByFromUserIdAndStatus(userId, FriendRequestStatus.PENDING).stream()
+            .map(req -> {
+                var recipient = userRepo.findById(req.getToUserId()).orElse(null);
+                if (recipient == null) return null;
+                return new FriendRequestResponse(req.getId(), recipient.getId(), recipient.getFullName(),
+                    recipient.getDisplayId(), recipient.getHostel(), recipient.getAvatarUrl(), 0);
+            }).filter(Objects::nonNull).toList();
+    }
+
+    // Revoke a sent request
+    public void revokeRequest(String userId, String requestId) {
+        var req = friendRequestRepo.findById(requestId).orElseThrow();
+        if (!req.getFromUserId().equals(userId)) throw new IllegalArgumentException("Not your request");
+        friendRequestRepo.delete(req);
+    }
+
     public String respondToRequest(String userId, String requestId, boolean accept) {
         var req = friendRequestRepo.findById(requestId).orElseThrow();
         if (!req.getToUserId().equals(userId)) throw new IllegalArgumentException("Not your request");
+        if (req.getStatus() != FriendRequestStatus.PENDING) throw new IllegalArgumentException("Request already handled");
+
         if (accept) {
             req.setStatus(FriendRequestStatus.ACCEPTED);
             friendRequestRepo.save(req);
             var user = userRepo.findById(userId).orElseThrow();
             var sender = userRepo.findById(req.getFromUserId()).orElseThrow();
-            user.getFriendIds().add(sender.getId());
-            sender.getFriendIds().add(userId);
-            userRepo.save(user);
-            userRepo.save(sender);
+            
+            // Prevent adding self as friend
+            if (!sender.getId().equals(userId)) {
+                // Prevent duplicate friend IDs
+                if (!user.getFriendIds().contains(sender.getId())) {
+                    user.getFriendIds().add(sender.getId());
+                    userRepo.save(user);
+                }
+                if (!sender.getFriendIds().contains(userId)) {
+                    sender.getFriendIds().add(userId);
+                    userRepo.save(sender);
+                }
+            }
             return "Friend request accepted";
         } else {
             req.setStatus(FriendRequestStatus.REJECTED);
@@ -93,7 +130,9 @@ public class FriendService {
 
     public List<FriendSummary> getFriends(String userId) {
         var user = userRepo.findById(userId).orElseThrow();
-        return user.getFriendIds().stream().map(fid -> userRepo.findById(fid).orElse(null))
+        return user.getFriendIds().stream()
+            .filter(fid -> !fid.equals(userId)) // Exclude self
+            .map(fid -> userRepo.findById(fid).orElse(null))
             .filter(Objects::nonNull)
             .map(f -> new FriendSummary(f.getId(), f.getFullName(), f.getDisplayId(), f.getEmail(), f.getHostel(), f.getAvatarUrl()))
             .toList();
@@ -119,5 +158,14 @@ public class FriendService {
                 if (changed) splitExpenseRepo.save(exp);
             });
         }
+        // Notify both users
+        var user = userRepo.findById(userId).orElse(null);
+        var other = userRepo.findById(withUserId).orElse(null);
+        String userName = user != null ? user.getFullName() : "Someone";
+        String otherName = other != null ? other.getFullName() : "Someone";
+        notificationService.send(withUserId, NotificationType.PAYMENT_SUCCESS, "Payment Successful",
+                "Transaction between you and " + userName + " was successful.");
+        notificationService.send(userId, NotificationType.PAYMENT_SUCCESS, "Payment Successful",
+                "Transaction between you and " + otherName + " was successful.");
     }
 }

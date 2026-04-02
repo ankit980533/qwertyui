@@ -9,7 +9,7 @@ data class UserProfile(val id: String, val displayId: String, val fullName: Stri
     val phoneNumber: String, val address: String?, val hostel: String?, val avatarUrl: String?,
     val coins: Int, val currentBalance: Double, val monthlyBudget: Double,
     val totalSaved: Double, val totalSpent: Double, val monthsActive: Int,
-    val friendCount: Int, val joinedMonth: String)
+    val activeLabel: String?, val friendCount: Int, val joinedMonth: String)
 data class UpdateProfileRequest(val fullName: String? = null, val phoneNumber: String? = null,
     val address: String? = null, val hostel: String? = null, val monthlyBudget: Double? = null)
 
@@ -31,7 +31,9 @@ data class ReportData(val period: String, val totalSpent: Double, val totalSaved
 
 data class CalendarDayInfo(val date: String, val totalSpent: Double, val status: String)
 data class UpcomingEventItem(val id: String, val title: String, val amount: Double, val dueDate: String, val paid: Boolean)
-data class CalendarData(val year: Int, val month: Int, val days: List<CalendarDayInfo>,
+data class CalendarData(val year: Int, val month: Int, val dailyBudget: Double = 0.0,
+    val weeklySpendLimit: Double = 0.0, val todayTotalSpent: Double = 0.0,
+    val budgetOverrun: Boolean = false, val days: List<CalendarDayInfo>,
     val upcomingEvents: List<UpcomingEventItem>, val todayExpenses: List<ExpenseItem>)
 
 data class FriendsOverview(val youOwe: Double, val toReceive: Double, val friendBalances: List<FriendBalanceItem>)
@@ -69,3 +71,18 @@ data class NotificationItem(val id: String, val type: String, val title: String,
 data class PaymentResult(val id: String, val toUserName: String, val amount: Double,
     val method: String, val status: String, val cashbackPercent: Double,
     val cashbackAmount: Double, val secure: Boolean)
+
+data class GroupItem(val id: String, val name: String, val memberIds: List<String>,
+    val createdBy: String)
+
+data class SplitExpenseItem(val id: String, val groupId: String?, val paidByUserId: String,
+    val description: String, val totalAmount: Double)
+
+data class CreateGroupRequest(val name: String, val memberIds: List<String>)
+
+data class SplitAmongEntry(val userId: String, val amount: Double)
+
+data class SplitExpenseRequest(val description: String, val totalAmount: Double,
+    val groupId: String?, val splitAmong: List<SplitAmongEntry>)
+
+data class CreatePiggyBankRequest(val goalName: String, val targetAmount: Double, val deadline: String)

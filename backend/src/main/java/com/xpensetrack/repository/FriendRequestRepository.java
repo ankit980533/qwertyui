@@ -8,5 +8,6 @@ import java.util.Optional;
 
 public interface FriendRequestRepository extends MongoRepository<FriendRequest, String> {
     List<FriendRequest> findByToUserIdAndStatus(String toUserId, FriendRequestStatus status);
+    List<FriendRequest> findByFromUserIdAndStatus(String fromUserId, FriendRequestStatus status);
     Optional<FriendRequest> findByFromUserIdAndToUserId(String fromUserId, String toUserId);
 }

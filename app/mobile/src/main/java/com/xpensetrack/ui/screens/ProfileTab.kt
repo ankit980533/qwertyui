@@ -1,6 +1,7 @@
 package com.xpensetrack.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -14,13 +15,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.xpensetrack.data.api.ApiClient
 import com.xpensetrack.data.api.ProfileApi
 import com.xpensetrack.data.model.UserProfile
+import com.xpensetrack.navigation.Routes
 import com.xpensetrack.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -30,78 +34,193 @@ fun ProfileTab(navController: NavController) {
     val scope = rememberCoroutineScope()
     LaunchedEffect(Unit) { scope.launch { try { profile = ApiClient.create<ProfileApi>().getProfile() } catch (_: Exception) {} } }
 
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        Box(modifier = Modifier.fillMaxWidth().background(Purple700).padding(20.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        // Purple header
+        Box(Modifier.fillMaxWidth().background(Purple700).padding(20.dp)) {
             Column {
                 Text("Profile", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = White)
-                Text("Manage your Account", fontSize = 14.sp, color = White.copy(alpha = 0.8f))
+                Text("Manage your Account", fontSize = 14.sp, color = White.copy(0.8f))
             }
         }
 
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Profile card
-            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp)) {
-                Column(modifier = Modifier.padding(20.dp)) {
+        Column(Modifier.padding(16.dp)) {
+            // Profile info card
+            Card(
+                Modifier.fillMaxWidth(),
+                RoundedCornerShape(20.dp),
+                elevation = CardDefaults.cardElevation(4.dp),
+                colors = CardDefaults.cardColors(containerColor = White)
+            ) {
+                Column(Modifier.padding(20.dp)) {
+                    // Avatar + Name + ID
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.size(72.dp).clip(CircleShape).background(PurpleLight), contentAlignment = Alignment.Center) {
-                            Text(profile?.fullName?.take(1) ?: "U", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Purple700)
+                        Box(
+                            Modifier.size(72.dp).clip(CircleShape).background(Color(0xFFFFE0B2)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                profile?.fullName?.take(1)?.uppercase() ?: "U",
+                                fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Purple700
+                            )
                         }
-                        Spacer(modifier = Modifier.width(16.dp))
+                        Spacer(Modifier.width(16.dp))
                         Column {
-                            Text(profile?.fullName ?: "Username", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                            Text("ID: ${profile?.displayId ?: "HL000000"}", fontSize = 13.sp, color = GrayText)
-                            Text("Joined ${profile?.joinedMonth ?: ""}", fontSize = 13.sp, color = GrayText)
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Contact info
-                    listOf(
-                        "✉️" to (profile?.email ?: "User Mail ID"),
-                        "📞" to (profile?.phoneNumber ?: "+91 00000 00000"),
-                        "📍" to (profile?.address ?: profile?.hostel ?: "Address")
-                    ).forEach { (icon, text) ->
-                        Row(modifier = Modifier.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(icon, fontSize = 16.sp)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(text, fontSize = 14.sp, color = GrayText)
+                            Text(
+                                profile?.fullName ?: "Username",
+                                fontWeight = FontWeight.Bold, fontSize = 22.sp
+                            )
+                            Text(
+                                "ID: ${profile?.displayId ?: "HL000000"}",
+                                fontSize = 14.sp, color = GrayText
+                            )
+                            Text(
+                                "Joined ${profile?.joinedMonth ?: ""}",
+                                fontSize = 14.sp, color = GrayText
+                            )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(Modifier.height(20.dp))
 
-                    // Stats row
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        StatCard("₹${(profile?.totalSaved ?: 0.0).toInt()}", "Total\nSaved", GreenLight, Green500, Modifier.weight(1f))
-                        StatCard("₹${(profile?.totalSpent ?: 0.0).toInt()}", "Total\nSpent", PurpleLight, Purple700, Modifier.weight(1f))
-                        StatCard("${profile?.monthsActive ?: 0}", "Months\nActive", YellowLight, Gold, Modifier.weight(1f))
+                    // Contact info rows with icons
+                    ProfileInfoRow("✉️", profile?.email ?: "User Mail ID")
+                    ProfileInfoRow("📞", profile?.phoneNumber ?: "+91 00000 00000")
+                    ProfileInfoRow("📍", profile?.address ?: profile?.hostel ?: "Address")
+
+                    Spacer(Modifier.height(20.dp))
+
+                    // Stats row - 3 colored boxes
+                    Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(10.dp)) {
+                        // Total Saved - green border
+                        StatBox(
+                            value = "₹${(profile?.totalSaved ?: 0.0).toInt()}",
+                            label = "Total\nSaved",
+                            borderColor = Green500,
+                            valueColor = Green500,
+                            modifier = Modifier.weight(1f)
+                        )
+                        // Total Spent - purple border
+                        StatBox(
+                            value = "₹${(profile?.totalSpent ?: 0.0).toInt()}",
+                            label = "Total\nSpent",
+                            borderColor = Purple700,
+                            valueColor = Purple700,
+                            modifier = Modifier.weight(1f)
+                        )
+                        // Active time - gold border (shows days or months)
+                        StatBox(
+                            value = profile?.activeLabel ?: "0 days",
+                            label = "Active",
+                            borderColor = Gold,
+                            valueColor = Gold,
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.height(20.dp))
 
-            // Menu items
-            listOf("👥 Friends & Roommates" to "friends", "⚙️ Account Settings" to "edit_profile").forEach { (label, route) ->
-                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                    .clickable { navController.navigate(route) },
-                    shape = RoundedCornerShape(16.dp)) {
-                    Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text(label, fontWeight = FontWeight.Medium, fontSize = 16.sp)
-                        Icon(Icons.Default.ArrowForward, null, tint = GrayText)
+            // Menu items card
+            Card(
+                Modifier.fillMaxWidth(),
+                RoundedCornerShape(20.dp),
+                elevation = CardDefaults.cardElevation(4.dp),
+                colors = CardDefaults.cardColors(containerColor = White)
+            ) {
+                Column {
+                    ProfileMenuItem("👥", "Friends & Roommates", Purple700) {
+                        navController.navigate(Routes.FRIENDS)
+                    }
+                    HorizontalDivider(color = GrayLight, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
+                    ProfileMenuItem("⚙️", "Account Settings", Purple700) {
+                        navController.navigate(Routes.EDIT_PROFILE)
+                    }
+                    HorizontalDivider(color = GrayLight, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
+                    ProfileMenuItem("🔔", "Notifications", Purple700) {
+                        navController.navigate(Routes.NOTIFICATIONS)
+                    }
+                    HorizontalDivider(color = GrayLight, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
+                    ProfileMenuItem("🔒", "Privacy & Security", Purple700) { }
+                    HorizontalDivider(color = GrayLight, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
+                    ProfileMenuItem("💳", "Payment Methods", Purple700) {
+                        navController.navigate(Routes.PAYMENT)
                     }
                 }
             }
+
+            Spacer(Modifier.height(20.dp))
+
+            // Logout button
+            OutlinedCard(
+                Modifier.fillMaxWidth().clickable {
+                    // Clear token and navigate to login
+                    ApiClient.token = null
+                    scope.launch {
+                        try {
+                            val context = navController.context
+                            com.xpensetrack.data.TokenStore.clearToken(context)
+                        } catch (_: Exception) {}
+                    }
+                    navController.navigate(Routes.LOGIN) { popUpTo(0) }
+                },
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Row(
+                    Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("↪", fontSize = 18.sp, color = Green500)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Logout", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Green500)
+                }
+            }
+
+            Spacer(Modifier.height(80.dp))
         }
     }
 }
 
 @Composable
-fun StatCard(value: String, label: String, bgColor: androidx.compose.ui.graphics.Color, textColor: androidx.compose.ui.graphics.Color, modifier: Modifier) {
-    Card(modifier = modifier, shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = bgColor)) {
-        Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(value, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = textColor)
-            Text(label, fontSize = 11.sp, color = GrayText, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+fun ProfileInfoRow(icon: String, text: String) {
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(icon, fontSize = 18.sp)
+        Spacer(Modifier.width(12.dp))
+        Text(text, fontSize = 15.sp, color = GrayText)
+    }
+}
+
+@Composable
+fun StatBox(value: String, label: String, borderColor: Color, valueColor: Color, modifier: Modifier) {
+    Box(
+        modifier.border(1.5.dp, borderColor, RoundedCornerShape(12.dp)).padding(12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(value, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = valueColor)
+            Text(label, fontSize = 11.sp, color = GrayText, textAlign = TextAlign.Center, lineHeight = 14.sp)
         }
+    }
+}
+
+@Composable
+fun ProfileMenuItem(icon: String, title: String, iconBgColor: Color, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier.size(40.dp).background(PurpleLight, RoundedCornerShape(10.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(icon, fontSize = 18.sp)
+        }
+        Spacer(Modifier.width(14.dp))
+        Text(title, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, modifier = Modifier.weight(1f))
+        Text(">", fontSize = 18.sp, color = GrayText)
     }
 }

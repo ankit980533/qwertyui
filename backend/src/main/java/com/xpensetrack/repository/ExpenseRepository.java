@@ -2,11 +2,13 @@ package com.xpensetrack.repository;
 
 import com.xpensetrack.model.Expense;
 import org.springframework.data.mongodb.repository.MongoRepository;
-import java.time.LocalDate;
+import org.springframework.data.mongodb.repository.Query;
+import java.time.Instant;
 import java.util.List;
 
 public interface ExpenseRepository extends MongoRepository<Expense, String> {
     List<Expense> findByUserIdOrderByDateDesc(String userId);
-    List<Expense> findByUserIdAndDateBetween(String userId, LocalDate start, LocalDate end);
-    List<Expense> findByUserIdAndDate(String userId, LocalDate date);
+
+    @Query("{ 'userId': ?0, 'date': { '$gte': ?1, '$lt': ?2 } }")
+    List<Expense> findByUserIdAndDateRange(String userId, Instant start, Instant end);
 }
