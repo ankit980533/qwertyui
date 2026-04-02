@@ -18,4 +18,3 @@ public class CalendarResponse {
     private List<UpcomingEventResponse> upcomingEvents;
     private List<ExpenseResponse> todayExpenses;
 }
-      //      uri: mongodb+srv://shreya_db_user:Th23cocbase%4022876523@cluster0.39j1zfk.mongodb.net/xpensetrack?retryWrites=true&w=majority

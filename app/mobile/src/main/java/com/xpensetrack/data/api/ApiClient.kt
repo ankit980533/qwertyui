@@ -6,9 +6,12 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object ApiClient {
-    // For emulator use: "http://10.0.2.2:8080/"
-    // For physical device use your PC's local IP: "http://192.168.x.x:8080/"
-    private const val BASE_URL = "http://192.168.1.60:8080/"
+    // Production API
+    private const val BASE_URL = "https://xpensetrack-4fdf.onrender.com/"
+    
+    // For local development:
+    // Emulator: "http://10.0.2.2:8080/"
+    // Physical device: "http://192.168.1.60:8080/"
     var token: String? = null
 
     private val authInterceptor = Interceptor { chain ->
