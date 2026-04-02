@@ -3,12 +3,12 @@ spring:
     name: xpensetrack
   data:
     mongodb:
-      uri: mongodb://localhost:27017/xpensetrack
+      uri: ${MONGODB_URI:mongodb://localhost:27017/xpensetrack}
 
 
 jwt:
-  secret: xpensetrack-secret-key-change-in-production-min-256-bits-long-key
-  expiration: 604800000  # 7 days
+  secret: ${JWT_SECRET:xpensetrack-secret-key-change-in-production-min-256-bits-long-key}
+  expiration: ${JWT_EXPIRATION:604800000}  # 7 days
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
