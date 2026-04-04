@@ -8,6 +8,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -28,22 +32,36 @@ import com.xpensetrack.navigation.Routes
 import com.xpensetrack.ui.theme.*
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun ProfileTab(navController: NavController) {
     var profile by remember { mutableStateOf<UserProfile?>(null) }
+    var isRefreshing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    LaunchedEffect(Unit) { scope.launch { try { profile = ApiClient.create<ProfileApi>().getProfile() } catch (_: Exception) {} } }
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        // Purple header
-        Box(Modifier.fillMaxWidth().background(Purple700).padding(20.dp)) {
-            Column {
-                Text("Profile", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = White)
-                Text("Manage your Account", fontSize = 14.sp, color = White.copy(0.8f))
-            }
+    fun loadData() {
+        scope.launch {
+            isRefreshing = true
+            try { profile = ApiClient.create<ProfileApi>().getProfile() } catch (_: Exception) {}
+            isRefreshing = false
         }
+    }
 
-        Column(Modifier.padding(16.dp)) {
+    LaunchedEffect(Unit) { loadData() }
+
+    val pullRefreshState = rememberPullRefreshState(isRefreshing, ::loadData)
+
+    Box(modifier = Modifier.fillMaxSize().pullRefresh(pullRefreshState)) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            // Purple header
+            Box(Modifier.fillMaxWidth().background(Purple700).padding(20.dp)) {
+                Column {
+                    Text("Profile", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = White)
+                    Text("Manage your Account", fontSize = 14.sp, color = White.copy(0.8f))
+                }
+            }
+
+            Column(Modifier.padding(16.dp)) {
             // Profile info card
             Card(
                 Modifier.fillMaxWidth(),
@@ -142,10 +160,11 @@ fun ProfileTab(navController: NavController) {
                     }
                     HorizontalDivider(color = GrayLight, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
                     ProfileMenuItem("🔒", "Privacy & Security", Purple700) { }
-                    HorizontalDivider(color = GrayLight, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
-                    ProfileMenuItem("💳", "Payment Methods", Purple700) {
-                        navController.navigate(Routes.PAYMENT)
-                    }
+                    // Payment Methods - Commented out as requested
+                    // HorizontalDivider(color = GrayLight, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
+                    // ProfileMenuItem("💳", "Payment Methods", Purple700) {
+                    //     navController.navigate(Routes.PAYMENT)
+                    // }
                 }
             }
 
@@ -178,7 +197,9 @@ fun ProfileTab(navController: NavController) {
             }
 
             Spacer(Modifier.height(80.dp))
+            }
         }
+        PullRefreshIndicator(isRefreshing, pullRefreshState, Modifier.align(Alignment.TopCenter))
     }
 }
 

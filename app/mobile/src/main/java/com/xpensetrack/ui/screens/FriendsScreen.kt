@@ -7,6 +7,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -27,14 +31,26 @@ import com.xpensetrack.navigation.Routes
 import com.xpensetrack.ui.theme.*
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun FriendsScreen(navController: NavController) {
     var data by remember { mutableStateOf<FriendsOverview?>(null) }
+    var isRefreshing by remember { mutableStateOf(false) }
     var showSettleDialog by remember { mutableStateOf(false) }
     var selectedFriend = remember { mutableStateOf<FriendBalanceItem?>(null) }
     val scope = rememberCoroutineScope()
-    LaunchedEffect(Unit) { scope.launch { try { data = ApiClient.create<FriendApi>().getOverview() } catch (_: Exception) {} } }
+
+    fun loadData() {
+        scope.launch {
+            isRefreshing = true
+            try { data = ApiClient.create<FriendApi>().getOverview() } catch (_: Exception) {}
+            isRefreshing = false
+        }
+    }
+
+    LaunchedEffect(Unit) { loadData() }
+
+    val pullRefreshState = rememberPullRefreshState(isRefreshing, ::loadData)
 
     // Settle Up Dialog
     if (showSettleDialog && selectedFriend.value != null) {
@@ -102,7 +118,8 @@ fun FriendsScreen(navController: NavController) {
             }
         }
     ) { padding ->
-        Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(16.dp)) {
+        Box(modifier = Modifier.fillMaxSize().padding(padding).pullRefresh(pullRefreshState)) {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
             // You Owe / To Receive cards
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Card(Modifier.weight(1f), RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFF3E5F5))) {
@@ -212,8 +229,9 @@ fun FriendsScreen(navController: NavController) {
                                 onClick = {
                                     scope.launch {
                                         try {
-                                            // Send notification to friend to remind them
-                                            ApiClient.create<FriendApi>().settle(mapOf("withUserId" to friend.userId))
+                                            // TODO: Implement proper notification API
+                                            // For now, just show a toast/snackbar
+                                            // ApiClient.create<NotificationApi>().sendReminder(friend.userId)
                                         } catch (_: Exception) {}
                                     }
                                 },
@@ -224,7 +242,7 @@ fun FriendsScreen(navController: NavController) {
                                 Text("Notify", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                             }
                         } else {
-                            // You owe friend - show Settle Up button (show dialog)
+                            // You owe friend - show Settle Up button (navigate to payment screen)
                             Button(
                                 onClick = {
                                     selectedFriend.value = friend
@@ -266,7 +284,9 @@ fun FriendsScreen(navController: NavController) {
                 }
             }
 
-            Spacer(Modifier.height(80.dp))
+                Spacer(Modifier.height(80.dp))
+            }
+            PullRefreshIndicator(isRefreshing, pullRefreshState, Modifier.align(Alignment.TopCenter))
         }
     }
 }

@@ -20,6 +20,29 @@ import com.xpensetrack.ui.theme.*
 @Composable
 fun PaymentScreen(navController: NavController) {
     var selectedMethod by remember { mutableStateOf<String?>(null) }
+    var showOnlyCashDialog by remember { mutableStateOf(false) }
+
+    // Dialog for non-cash payment methods
+    if (showOnlyCashDialog) {
+        AlertDialog(
+            onDismissRequest = { showOnlyCashDialog = false },
+            title = { Text("Payment Method Not Available", fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text("Currently, only Cash payment is allowed for settling up.", fontSize = 15.sp)
+                    Spacer(Modifier.height(8.dp))
+                    Text("Please select the 'Settled' option to confirm cash payment.", fontSize = 14.sp, color = GrayText)
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showOnlyCashDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = Purple700),
+                    shape = RoundedCornerShape(12.dp)
+                ) { Text("OK") }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -65,7 +88,13 @@ fun PaymentScreen(navController: NavController) {
                 Triple("Credit/ Debit/ ATM Card", "Add and secure cards as per RBI guidelines", "Get upto 5% cashback • 2 offers available"),
                 Triple("Settled", "Settled outside with cash or online payment options.", null)
             ).forEach { (title, desc, offer) ->
-                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable { selectedMethod = title },
+                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable { 
+                    if (title == "Settled") {
+                        selectedMethod = title
+                    } else {
+                        showOnlyCashDialog = true
+                    }
+                },
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = if (selectedMethod == title) PurpleLight else White)) {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -81,6 +110,29 @@ fun PaymentScreen(navController: NavController) {
                         offer?.let { Text(it, fontSize = 13.sp, color = Green500, fontWeight = FontWeight.Medium) }
                     }
                 }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Confirm button - only enabled when Settled is selected
+            Button(
+                onClick = {
+                    // TODO: Call settle API and navigate back
+                    navController.popBackStack()
+                },
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                enabled = selectedMethod == "Settled",
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Purple700,
+                    disabledContainerColor = GrayLight
+                )
+            ) {
+                Text(
+                    if (selectedMethod == "Settled") "Confirm Cash Payment" else "Select Payment Method",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
             }
         }
     }

@@ -8,6 +8,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -29,19 +33,27 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun CalendarTab(navController: NavController) {
     var yearMonth by remember { mutableStateOf(YearMonth.now()) }
     var data by remember { mutableStateOf<CalendarData?>(null) }
     var selectedDay by remember { mutableStateOf<Int?>(null) }
     var selectedDayExpenses by remember { mutableStateOf<List<com.xpensetrack.data.model.ExpenseItem>>(emptyList()) }
+    var isRefreshing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(yearMonth) {
+    fun loadData() {
         scope.launch {
+            isRefreshing = true
             try { data = ApiClient.create<ExpenseApi>().getCalendar(yearMonth.year, yearMonth.monthValue) }
             catch (_: Exception) {}
+            isRefreshing = false
         }
+    }
+
+    LaunchedEffect(yearMonth) {
+        loadData()
         selectedDay = null
         selectedDayExpenses = emptyList()
     }
@@ -71,16 +83,19 @@ fun CalendarTab(navController: NavController) {
         }
     }
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        // Purple header
-        Box(Modifier.fillMaxWidth().background(Purple700).padding(16.dp)) {
-            Column {
-                Text("Calendar", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = White)
-                Text("Track bills and expenses", fontSize = 13.sp, color = White.copy(0.8f))
-            }
-        }
+    val pullRefreshState = rememberPullRefreshState(isRefreshing, ::loadData)
 
-        Column(Modifier.padding(16.dp)) {
+    Box(modifier = Modifier.fillMaxSize().pullRefresh(pullRefreshState)) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            // Purple header
+            Box(Modifier.fillMaxWidth().background(Purple700).padding(16.dp)) {
+                Column {
+                    Text("Calendar", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = White)
+                    Text("Track bills and expenses", fontSize = 13.sp, color = White.copy(0.8f))
+                }
+            }
+
+            Column(Modifier.padding(16.dp)) {
             // Month navigation with arrows in purple boxes
             Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
                 Box(
@@ -311,6 +326,8 @@ fun CalendarTab(navController: NavController) {
             )
 
             Spacer(Modifier.height(80.dp))
+            }
         }
+        PullRefreshIndicator(isRefreshing, pullRefreshState, Modifier.align(Alignment.TopCenter))
     }
 }

@@ -4,6 +4,8 @@ import com.xpensetrack.data.model.*
 import retrofit2.http.*
 
 interface AuthApi {
+
+    //post , put , delete, get ,patch
     @POST("api/auth/signup")
     suspend fun signup(@Body req: SignupRequest): AuthResponse
     @POST("api/auth/login")

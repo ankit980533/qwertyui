@@ -2,12 +2,17 @@ package com.xpensetrack.ui.screens
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -23,6 +28,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -45,50 +51,78 @@ val CategoryColors = mapOf(
     "MISC" to Color(0xFFFF8F00)
 )
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun DashboardTab(navController: NavController) {
     var data by remember { mutableStateOf<DashboardData?>(null) }
+    var isRefreshing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     val refreshTrigger = navController.currentBackStackEntry
         ?.savedStateHandle?.getLiveData<Boolean>("refresh")?.value
 
-    LaunchedEffect(refreshTrigger, Unit) {
+    fun loadData() {
         scope.launch {
+            isRefreshing = true
             try { data = ApiClient.create<ExpenseApi>().getDashboard() } catch (_: Exception) {}
+            isRefreshing = false
         }
     }
 
-    LaunchedEffect(navController.currentDestination) {
-        try { data = ApiClient.create<ExpenseApi>().getDashboard() } catch (_: Exception) {}
+    LaunchedEffect(refreshTrigger, Unit) {
+        loadData()
     }
 
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        // Purple header
-        Box(
-            modifier = Modifier.fillMaxWidth()
-                .background(Brush.horizontalGradient(listOf(Purple700, Purple500)))
-                .padding(20.dp)
-        ) {
+    LaunchedEffect(navController.currentDestination) {
+        loadData()
+    }
+
+    val pullRefreshState = rememberPullRefreshState(isRefreshing, ::loadData)
+
+    Box(modifier = Modifier.fillMaxSize().pullRefresh(pullRefreshState)) {
+        Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            // Purple header
+            Box(
+                modifier = Modifier.fillMaxWidth()
+                    .background(Brush.horizontalGradient(listOf(Purple700, Purple500)))
+                    .padding(20.dp)
+            ) {
             Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
                 Column {
                     Text("Hi, ${data?.fullName ?: "User"}!", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = White)
                     Text("Here's your financial overview", fontSize = 14.sp, color = White.copy(0.8f))
                 }
-                IconButton(onClick = { navController.navigate(Routes.NOTIFICATIONS) }) {
-                    BadgedBox(badge = {
-                        if ((data?.unreadNotificationCount ?: 0) > 0)
-                            Badge(containerColor = Red500) { Text("${data?.unreadNotificationCount}") }
-                    }) {
-                        Box(Modifier.size(40.dp).background(Gold.copy(0.3f), CircleShape), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Notifications, null, tint = Gold, modifier = Modifier.size(24.dp))
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clickable { navController.navigate(Routes.NOTIFICATIONS) }
+                        .padding(8.dp)
+                ) {
+                    Icon(Icons.Default.Notifications, null, tint = Gold, modifier = Modifier.size(32.dp))
+                    // Custom badge with better visibility on purple background
+                    if ((data?.unreadNotificationCount ?: 0) > 0) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(20.dp)
+                                .background(Red500, CircleShape)
+                                .border(2.dp, White, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "${data?.unreadNotificationCount}",
+                                color = White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
                         }
                     }
                 }
             }
         }
 
-        Column(Modifier.padding(16.dp)) {
+            Column(Modifier.padding(16.dp)) {
             // Balance card
             Card(Modifier.fillMaxWidth(), RoundedCornerShape(20.dp),
                 elevation = CardDefaults.cardElevation(8.dp),
@@ -326,7 +360,9 @@ fun DashboardTab(navController: NavController) {
             }
 
             Spacer(Modifier.height(80.dp))
+            }
         }
+        PullRefreshIndicator(isRefreshing, pullRefreshState, Modifier.align(Alignment.TopCenter))
     }
 }
 

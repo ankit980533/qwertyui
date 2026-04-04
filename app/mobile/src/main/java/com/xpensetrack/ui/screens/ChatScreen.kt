@@ -45,7 +45,7 @@ fun ChatScreen(navController: NavController) {
         // Header
         Box(modifier = Modifier.fillMaxWidth().background(Purple700).padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("🐉", fontSize = 32.sp)
+                Text("🤖", fontSize = 32.sp)
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text("AI Assistant", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = White)
@@ -70,17 +70,28 @@ fun ChatScreen(navController: NavController) {
         }
 
         // Quick actions
-        Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             quickActions.forEach { action ->
-                OutlinedButton(onClick = {
-                    input = action
-                    scope.launch {
-                        try {
-                            val res = ApiClient.create<ChatApi>().chat(mapOf("message" to action))
-                            messages = messages + ChatMessageItem("", "USER", action, "") + ChatMessageItem("", "ASSISTANT", res.reply, "")
-                        } catch (_: Exception) {}
-                    }
-                }, shape = RoundedCornerShape(20.dp)) { Text(action, fontSize = 13.sp) }
+                OutlinedButton(
+                    onClick = {
+                        input = action
+                        scope.launch {
+                            try {
+                                val res = ApiClient.create<ChatApi>().chat(mapOf("message" to action))
+                                messages = messages + ChatMessageItem("", "USER", action, "") + ChatMessageItem("", "ASSISTANT", res.reply, "")
+                            } catch (_: Exception) {}
+                        }
+                    },
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(action, fontSize = 13.sp)
+                }
             }
         }
 

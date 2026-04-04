@@ -28,7 +28,20 @@ import kotlinx.coroutines.launch
 fun NotificationsScreen(navController: NavController) {
     var notifications by remember { mutableStateOf<List<NotificationItem>>(emptyList()) }
     val scope = rememberCoroutineScope()
-    LaunchedEffect(Unit) { scope.launch { try { notifications = ApiClient.create<NotificationApi>().getAll() } catch (_: Exception) {} } }
+    
+    LaunchedEffect(Unit) { 
+        scope.launch { 
+            try { 
+                notifications = ApiClient.create<NotificationApi>().getAll()
+                // Mark all unread notifications as read
+                notifications.filter { !it.read }.forEach { notif ->
+                    try {
+                        ApiClient.create<NotificationApi>().markRead(notif.id)
+                    } catch (_: Exception) {}
+                }
+            } catch (_: Exception) {} 
+        } 
+    }
 
     Scaffold(
         topBar = {
@@ -48,8 +61,8 @@ fun NotificationsScreen(navController: NavController) {
                             Text(when (notif.type) { "DRAGON_UPDATE" -> "🐉"; "PAYMENT_SUCCESS" -> "💳"; else -> "🔔" }, fontSize = 20.sp)
                         }
                         Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(notif.title, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(notif.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = DarkText)
                             Text(notif.message, fontSize = 13.sp, color = GrayText)
                             Text(notif.createdAt.take(16), fontSize = 11.sp, color = GrayText)
                         }
