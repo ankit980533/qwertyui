@@ -1,4 +1,5 @@
 # 🎮 XpenseTrack - Complete Project Documentation
+## Explained Like You're 5 Years Old! 🧒
 
 ---
 
